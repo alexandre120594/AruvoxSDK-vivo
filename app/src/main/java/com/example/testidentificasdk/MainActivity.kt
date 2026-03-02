@@ -13,13 +13,33 @@ import com.example.testidentificasdk.dialer.DialerTestActivity
 import com.example.testidentificasdk.spam.SpamSdkTestActivity
 import com.resolveja.aruvox.sdk.AruvoxSDK
 import kotlinx.coroutines.launch
-
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         checkAndRequestDialerRole()
     }
+
+    private val contactsPermissionLauncher =
+        registerForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions()
+        ) { permissions ->
+
+            val granted = permissions[Manifest.permission.WRITE_CONTACTS] == true &&
+                    permissions[Manifest.permission.READ_CONTACTS] == true
+
+            if (granted) {
+                launchApp()
+            } else {
+                // You can decide what to do here
+                // For now, continue anyway
+                checkContactsPermissionAndLaunch()
+            }
+        }
 
     private fun checkAndRequestDialerRole() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -84,4 +104,30 @@ class MainActivity : ComponentActivity() {
             launchApp()
         }
     }
+
+    private fun checkContactsPermissionAndLaunch() {
+
+        val readGranted = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.READ_CONTACTS
+        ) == PackageManager.PERMISSION_GRANTED
+
+        val writeGranted = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.WRITE_CONTACTS
+        ) == PackageManager.PERMISSION_GRANTED
+
+        if (readGranted && writeGranted) {
+            launchApp()
+        } else {
+            contactsPermissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.READ_CONTACTS,
+                    Manifest.permission.WRITE_CONTACTS
+                )
+            )
+        }
+    }
 }
+
+

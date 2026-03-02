@@ -19,7 +19,11 @@ import com.resolveja.aruvox.sdk.contato.result.ContatoResult
 import com.resolveja.aruvox.sdk.core.ui.AruvoxColors
 import com.resolveja.aruvox.sdk.core.ui.AruvoxTheme
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.example.testidentificasdk.theme.VivoUiConfig
+import com.resolveja.aruvox.sdk.contato.ui.AruvoxContactsFlow
 import com.resolveja.aruvox.sdk.core.ui.theme.AruvoxSdkTheme
 
 
@@ -45,41 +49,53 @@ class ContactsTestActivity : ComponentActivity() {
     private fun showContacts() {
         setContent {
 
-            var selectedContactId by androidx.compose.runtime.remember {
-                androidx.compose.runtime.mutableStateOf<String?>(null)
+            var selectedContactId by remember {
+                mutableStateOf<String?>(null)
             }
-
+            val prefs = getSharedPreferences("auth", MODE_PRIVATE)
+            val loggedPhone = prefs.getString("logged_phone", null)
                 Surface(modifier = Modifier.fillMaxSize()) {
+                    AruvoxSdkTheme(VivoUiConfig) {
+                        AruvoxContactsFlow(
+                            contactsManager = AruvoxSDK.contacts,
+                            spamManager = AruvoxSDK.spam,
+                            loggedPhone = loggedPhone!!,
+                            onCall = {
+                                Log.d("SDK_TEST", "Call phone: $it")
 
-                    if (selectedContactId == null) {
-                        AruvoxSdkTheme {
-                            AruvoxContactsScreen(
-                                contactsManager = AruvoxSDK.contacts,
-                                onResult = ::handleResult,
-                                onOpenDetails = { contactId ->
-                                    selectedContactId = contactId
-                                }
-                            )
-                        }
-                    } else {
-                        // 🔹 CONTACT DETAILS
-                        AruvoxSdkTheme {
-                            AruvoxContactDetailsScreen(
-                                contactsManager = AruvoxSDK.contacts,
-                                contactId = selectedContactId!!,
-                                onResult = { result ->
-                                    when (result) {
-                                        is ContactDetailsResult.Back -> {
-                                            selectedContactId = null
-                                        }
-                                        else -> {
-                                            handleResultFromDetails(result)
-                                        }
-                                    }
-                                }
-                            )
-                        }
+                            },
+                        )
                     }
+
+//                    if (selectedContactId == null) {
+//                        AruvoxSdkTheme(VivoUiConfig) {
+//                            AruvoxContactsScreen(
+//                                contactsManager = AruvoxSDK.contacts,
+//                                onResult = ::handleResult,
+//                                onOpenDetails = { contactId ->
+//                                    selectedContactId = contactId
+//                                }
+//                            )
+//                        }
+//                    } else {
+//                        // 🔹 CONTACT DETAILS
+//                        AruvoxSdkTheme(VivoUiConfig)  {
+//                            AruvoxContactDetailsScreen(
+//                                contactsManager = AruvoxSDK.contacts,
+//                                contactId = selectedContactId!!,
+//                                onResult = { result ->
+//                                    when (result) {
+//                                        is ContactDetailsResult.Back -> {
+//                                            selectedContactId = null
+//                                        }
+//                                        else -> {
+//                                            handleResultFromDetails(result)
+//                                        }
+//                                    }
+//                                }
+//                            )
+//                        }
+//                    }
                 }
             }
         }
@@ -107,7 +123,7 @@ class ContactsTestActivity : ComponentActivity() {
     }
 
 private fun handleResultFromDetails(
-    result: com.resolveja.aruvox.sdk.contato.result.ContactDetailsResult
+    result: ContactDetailsResult
 ) {
     when (result) {
         is ContactDetailsResult.Call -> {
